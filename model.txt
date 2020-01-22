@@ -1,0 +1,94 @@
+\section{Security system Overview}
+
+\subsection{Data collection and Calibration}
+The approach to securing the password involves asking each new user to calibrate two different rates of blinking. The two types of blinks are captured separately.
+\\
+To capture the blink we use the facial landmark detection to localize the eyes in a given frame from a local webcam, this is achieved with the help of HOG and Linear  following [2] and [4]. We use a pre-trained model on every frame for retrieving the Eye Aspect Ratio (EAR) which is the ratio of the height of the eye to its width. From the landmarks detected we get 6 for each eye, using which we get 2 heights and one width (See Figure).
+\\
+\begin{figure}[h!]
+\centering
+\includegraphics[scale=0.25]{ear2.png}
+\caption{EAR open}
+\label{fig:universe}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[scale=0.25]{ear1.png}
+\caption{EAR closed}
+\label{fig:universe}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[scale=0.25]{ear.png}
+\caption{formulae}
+\label{fig:universe}
+\end{figure}
+
+
+\hspace{20 mm} \includegraphics[scale=0.25]{earf.png}
+
+
+We compute for each eye the EAR and take their average, assuming the eyes are parallel to the camera. For collecting the user blink data we assume that any frame with EAR below 0.17 is a potential frame for blink. But we cannot rely on just this threshold as there may be quiet a few false positives. The built-in webcam has approximately a FSP of 30, based on this we define two variables to keep track of the number Inter blink frames and the number of frames a blink was detected for, that is average EAR for the frame is below 0.19. 
+\\
+To further avoid any mislabeled frame, we say that at least 2 frames must have passed before detecting a next blink and the number of frames the blink lasted for should be minimum of 3 and a maximum of 32 (any blink longer that 30 frames, 1 second is discarded).
+\\
+
+
+\begin{figure}[h!]
+\centering
+\includegraphics[scale=0.3]{1.png}
+\caption{Blink Type 1 capture, In this case fast blinks with an average of 4 frames per blink }
+\label{fig:universe}
+\end{figure}
+
+
+\begin{figure}[h!]
+\centering
+\includegraphics[scale=0.3]{2.png}
+\caption{Blink Type 2 capture, In this case it is slow blink with an average of 17 frames per blink}
+\label{fig:universe}
+\end{figure}
+
+
+\subsection{Training the classifier}
+At least 15 blinks need to be detected for each type of the blink.
+The data is restructured such that for every frame we collect the average EAR's of 7 neighbouring frames on either side and the average of all 15 frames and features for building a good classifier.\\
+This is then passed to a Linear SVM with C=1 making sure that it doesn't over-fit the data nor generalizing too much.
+\\
+
+\begin{figure}[h!]
+\centering
+\includegraphics[scale=0.4]{SVM.png}
+\caption{On an average the SVM classifier built has the following evaluation results}
+\label{fig:universe}
+\end{figure}
+
+The classifier is evaluated with 40 percent of the data randomly sampled. In this case we need to make sure the precision is high as blinks are rare events compared to non blink frames.
+In order for the classifier to be robust make sure that there is enough light falling over the eyes and ensure that you are at least 20 centimeters from the camera.
+
+\subsection{Detecting and storing password}
+
+We record each blink by detecting the type simultaneously, each classifier analyses the frame and decides if it belongs to a type of blink.
+Once the password is finalized, an encoder dictionary is used to determine the mapping of sub-patterns of the blinks within the whole string.
+
+
+\begin{figure}[h!]
+\centering
+\includegraphics[scale=0.4]{enc.png}
+\caption{The keys correspond to sub patterns within the sequence of blinks, the values are their encoded form.}
+\label{fig:universe}
+\end{figure}
+
+The password has to be of minimum length 8 and maximum length 64. We take the modulus of the length of entered blink sequence and handle each case. When remainder is 0, the whole sequence is divided into batches of 4. If the remainder is 1 or 2, for the last few blinks are mapped individually. If the remainder is 3 then we take sequences of 4 till only last 3 are left and encode the 3 separately.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[scale=0.5]{usr.png}
+\caption{The keys is the user name, first element of key is path for  data of type1 blink, second element of key is path of data for type2 blink.}
+\label{fig:universe}
+\end{figure}
+\\
+The actual blink sequence for user 'fosho1' is '12122221' but is stored as 'FO'
+\\
