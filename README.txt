@@ -12,3 +12,4 @@ Steps to run eye blinking user authentication system:
  Be patient while calibration.
 
  You can reset the password while either entering or authenticating by pressing the 'r' key.
+ Read the pdf attached to understand the working of the algorithm.
